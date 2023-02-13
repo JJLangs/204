@@ -1,0 +1,23 @@
+import requests
+
+response = requests.get("https://swapi.dev/api/starships/")
+
+#starship_list = response.json()["results"]
+
+# Get 10 results using the "results" key
+# Get URL for next 10 results using "next" key
+# Build a list of all of the starships
+
+biglist = []
+while response.status_code == 200:
+  starship_list = response.json()["results"]  
+  for starship in starship_list:
+    biglist.append(starship)
+  try:
+    next_page_url = response.json()['next']
+    response = requests.get(next_page_url)
+  except:
+    print("Bad URL, all pages done")
+    break
+
+print(biglist)
