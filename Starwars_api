@@ -1,23 +1,36 @@
+import pymongo
 import requests
 
-response = requests.get("https://swapi.dev/api/starships/")
 
-#starship_list = response.json()["results"]
+def loop_api(url: str = 'https://swapi.dev/api/starships/?page='):    #defines the function and sets the api as the argument
+  biglist = []                                          #blank list where we will put each starship
+  while response.status_code == 200:                    #while loop runs if connection is good
+    starship_list = response.json()["results"]          #creates a list of all starships
+    for starship in starship_list:                      #iterates over the list that was just made
+      biglist.append(starship)                          #takes each starship and adds it to the variable we assigned
+    try:
+      next_page_url = response.json()['next']           #goes through the next page of starship data
+      response = requests.get(next_page_url)            #changes the response variable to be the new page
+    except:                                             #trouble shoots if connection is solid
+      break                                             #breaks the program
 
-# Get 10 results using the "results" key
-# Get URL for next 10 results using "next" key
-# Build a list of all of the starships
+    for craft in starship_list:                         #iterates over each starship in the list
+      pilots = craft['pilots']                          #calls upon the pilot information that is nested in each starship
+      pilot_data = []                                   #blank list where we will put the id of each pilot
+      for pilot_url in pilots:                          #iterates over each pilot
+          request_pilot = requests.get(f'{pilot_url}')  #gets the hyperlink url of each pilot
+          pilot_name = request_pilot.json()['name']     #gets the name of each pilot
+          pilot_id = col.find( {'name': f'{pilot_name}'}, {'_id': 1} )  
+          for id in pilot_id:                           #iterates over each pilot_id
+            pilot_data.append(id['_id'])                #adds the pilot id to our list 
+            craft['pilots'] = pilot_data                #changes the the hyperlink url to id we set
+            biglist.append(craft)                       #changes this information in the first variable we set
+    return biglist                                      #returns all the starships with the pilot infomation appended
 
-biglist = []
-while response.status_code == 200:
-  starship_list = response.json()["results"]  
-  for starship in starship_list:
-    biglist.append(starship)
-  try:
-    next_page_url = response.json()['next']
-    response = requests.get(next_page_url)
-  except:
-    print("Bad URL, all pages done")
-    break
-
-print(biglist)
+  def write_DB(data: dict, database: str = 'starwars', collectionName: str = 'starships', server: str = 'mongodb://localhost:27017/'):  #writes to the local database
+      client = pymongo.MongoClient(server)              #connects to the Mongodb local server
+      db = client[database]                             #writes to the database                          
+      col = db[collectionName]                          #adds to the collection inside the database
+      col.insert_many(data)                             #inserts the new data
+      
+  write_DB(loop_api())                                  #runs the function just set and uses the api_looper as the arguement
