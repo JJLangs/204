@@ -1,0 +1,26 @@
+import boto3
+import pandas as pd
+from io import StringIO
+
+s3_client = boto3.client('s3')
+s3_resource = boto3.resource('s3')
+
+bucket_name = 'data-eng-resources'
+
+response1 = s3_client.get_object(Bucket=bucket_name, Key="python/fish-market.csv")
+df1 = pd.read_csv(response1.get("Body"))
+
+response2 = s3_client.get_object(Bucket=bucket_name, Key="python/fish-market-mon.csv")
+df2 = pd.read_csv(response2.get("Body"))
+
+response3 = s3_client.get_object(Bucket=bucket_name, Key="python/fish-market-tues.csv")
+df3 = pd.read_csv(response3.get("Body"))
+
+
+new_concat = pd.concat([df1, df2, df3])
+
+final_df = new_concat.groupby(['Species']).mean()
+
+csv_buffer = StringIO()
+final_df.to_csv(csv_buffer)
+s3_resource.Object(bucket_name, 'fish-market/Jonathan-final.csv').put(Body=csv_buffer.getvalue())
